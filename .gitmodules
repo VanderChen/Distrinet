@@ -1,3 +1,9 @@
 [submodule "mininet"]
 	path = mininet
 	url = https://github.com/mininet/mininet.git
+[submodule "scripts/deploy-alcor-k8s/alcor"]
+	path = scripts/deploy-alcor-k8s/alcor
+	url = https://github.com/futurewei-cloud/alcor.git
+[submodule "scripts/deploy-distrinet-aca/alcor-control-agent"]
+	path = scripts/deploy-distrinet-aca/alcor-control-agent
+	url = https://github.com/futurewei-cloud/alcor-control-agent.git

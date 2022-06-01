@@ -1,0 +1,12 @@
+{
+    "host_infos": [
+        {
+            "local_ip": "10.213.43.172",
+            "node_id": "node-fw0009076",
+            "mac_address": "e0:97:96:02:45:53",
+            "node_name": "fw0009076",
+            "server_port": 50001,
+            "veth": "eth0"
+        }
+      ]
+}
