@@ -193,9 +193,9 @@ MAPPERS = { 'roundRobin': RoundRobinMapper, "block":BlockMapper, "maxinet":Maxin
             "embeddedBalanced":EmbedBalanced, "embeddedPartition":EmbedPartition, "random":RandomMapper,
             "bfdp":BestFitDopProduct,"ffdp":FirstFitDecreasingPriority,"ffod":FirstFitOrderedDeviation}
 
-PROVISIONDEF = 'aws'
+# PROVISIONDEF = 'aws'
 #PROVISIONS = { 'aws': optimizationAWSHelper }
-PROVISIONS = { 'aws': None }
+# PROVISIONS = { 'aws': None }
 
 PREBUILD = [default_images]
 # ============================================================================
@@ -298,7 +298,7 @@ class DistrinetRunner( object ):
                          dest='test', help='|'.join( TESTS.keys() ) )
         opts.add_option( '--xterms', '-x', action='store_true',
                          default=False, help='spawn xterms for each node' )
-        opts.add_option( '--ipbase', '-i', type='string', default='12.0.0.0/8',
+        opts.add_option( '--ipbase', '-i', type='string', default='10.0.0.0/8',
                          help='base IP address for hosts' )
         opts.add_option( '--mac', action='store_true',
                          default=False, help='automatically set host MACs' )
@@ -403,7 +403,7 @@ class DistrinetRunner( object ):
 
         opts = self.options
 
-        opts.provision=None
+        # opts.provision=None
         if opts.cluster:
             servers = opts.cluster.split( ',' )
             for server in servers:
@@ -459,17 +459,17 @@ class DistrinetRunner( object ):
             opts.listenport = None
 
         # Handle innamespace, cluster options
-        if opts.innamespace and opts.cluster:
-            error( "Please specify --innamespace OR --cluster\n" )
-            exit()
-        Net = MininetWithControlNet if opts.innamespace else Mininet
-        if opts.cluster:
-            warn( '*** WARNING: Experimental cluster mode!\n'
-                  '*** Using RemoteHost, RemoteOVSSwitch, RemoteLink\n' )
-            host, switch, link = RemoteHost, RemoteOVSSwitch, RemoteLink
-            Net = partial( MininetCluster, servers=servers,
-                           placement=PLACEMENT[ opts.placement ] )
-            mininet.cli.CLI = ClusterCLI
+        # if opts.innamespace and opts.cluster:
+        #     error( "Please specify --innamespace OR --cluster\n" )
+        #     exit()
+        # Net = MininetWithControlNet if opts.innamespace else Mininet
+        # if opts.cluster:
+        #     warn( '*** WARNING: Experimental cluster mode!\n'
+        #           '*** Using RemoteHost, RemoteOVSSwitch, RemoteLink\n' )
+        #     host, switch, link = RemoteHost, RemoteOVSSwitch, RemoteLink
+        #     Net = partial( MininetCluster, servers=servers,
+        #                    placement=PLACEMENT[ opts.placement ] )
+        #     mininet.cli.CLI = ClusterCLI
 
 
         if opts.provision and opts.workers :
@@ -490,7 +490,7 @@ class DistrinetRunner( object ):
             if isinstance(client_keys, str):
                 client_keys = [client_keys]
             user = ssh_conf["user"]
-            jump = ssh_conf.get("bastion", None)
+            # jump = ssh_conf.get("bastion", None)
            
             if 'port_forwarding' in conf:
                 port_forwarding = conf["port_forwarding"]
@@ -498,18 +498,18 @@ class DistrinetRunner( object ):
             if "mapping_algorithm" in conf:
                 mapping_algorithm = conf["mapping_algorithm"]
                 json_path_physical_topology = mapping_algorithm["physical_infrastructure_path"]
-                json_path_cloud_prices = mapping_algorithm["cloud_instances_prices"]
+                # json_path_cloud_prices = mapping_algorithm["cloud_instances_prices"]
 
-        if opts.bastion:
-            jump = opts.bastion
+        # if opts.bastion:
+            # jump = opts.bastion
 
         for x in PREBUILD:
             x(topo=topo)
 
         # Provision the cloud
-        if opts.provision:
-            if opts.provision == "aws":
-                raise Exception ("Removed for compatibility")
+        # if opts.provision:
+        #     if opts.provision == "aws":
+        #         raise Exception ("Removed for compatibility")
                 #def __packing_helper(d1, l2):
                 #    new_d1 = {}
                 #    d_values = set(d1.values())
@@ -549,8 +549,9 @@ class DistrinetRunner( object ):
         # Cloud already provisioned 
         if opts.workers:
             workers = opts.workers.split( ',' )
-            master = workers[0]
-            workers=workers[1:]
+            client = workers[0]
+            master = workers[1]
+            workers=workers[2:]
 
         if opts.workers or opts.provision or opts.placement_file_path:
             warn( '*** WARNING: Experimental cloud mode!\n'
@@ -575,7 +576,7 @@ class DistrinetRunner( object ):
                     raise ValueError(f"{opts.mapper} not implemented ")
 
                 # Save experiment file
-                experiment={"bastion":jump,"workers":workers,"mapping":mapper.places,"mapper":opts.mapper}
+                experiment={"workers":workers,"mapping":mapper.places,"mapper":opts.mapper}
                 self.save_experiment(experiment)
             else:
                 # check if the experiment file is correct
@@ -586,7 +587,7 @@ class DistrinetRunner( object ):
                     experiment_data = json.load(read_file)
 
                 # get the info from the experiment file
-                jump=experiment_data["bastion"]
+                # jump=experiment_data["bastion"]
                 workers=experiment_data["workers"]
                 # use the dummy mapper with the placement in the experiment file
                 mapper= DummyMapper(places=experiment_data["mapping"])
@@ -603,7 +604,8 @@ class DistrinetRunner( object ):
                     link=link,
                     adminIpBase=adminIpBase,
                     build=build,
-                    jump=jump,
+                    # jump=jump,
+                    client=client,
                     master=master,
                     mapper=mapper,
                     user=user,

@@ -7,7 +7,7 @@ import time
 from mininet.dutil import _info
 
 class ASsh(object):
-    def __init__(self, loop, host, port=22, username=None, bastion=None,
+    def __init__(self, loop, host, port=22, username=None,
                        bastion_port=22, client_keys=None,
                        **params):
         # the node runs
@@ -23,8 +23,8 @@ class ASsh(object):
         self.client_keys = client_keys
 
         # ssh bastion information
-        self.bastion = bastion
-        self.bastion_port = bastion_port
+        # self.bastion = bastion
+        # self.bastion_port = bastion_port
 
         # current task in execution
         self.task = None
@@ -109,11 +109,11 @@ class ASsh(object):
         """
         Establishes an SSH connection to the host
         """
-        if self.bastion:
-            # create a tunnel via the bastion to connect to the hostA
-            self.createTunnel()
-            # wait fot th tunnel to be created
-            self.waitTunneled()
+        # if self.bastion:
+        #     # create a tunnel via the bastion to connect to the hostA
+        #     self.createTunnel()
+        #     # wait fot th tunnel to be created
+        #     self.waitTunneled()
   
         task = self.loop.create_task(self._connect(host=self.connection_host, port=self.connection_port))
 

@@ -95,6 +95,7 @@ import random
 from time import sleep
 from itertools import chain, groupby
 from math import ceil
+from unicodedata import name
 
 from mininet.cli import CLI
 from mininet.log import info, error, debug, output, warn
@@ -142,7 +143,8 @@ class Distrinet( Mininet ):
                   adminIpBase='192.168.0.1/8',
                   autoSetMacs=False, autoSetDocker=False,autoPinCpus=False,
                   listenPort=None, waitConnected=False, waitConnectionTimeout=5, 
-                  jump=None, user="root", client_keys=None, master=None, pub_id=None,
+                #   jump=None,
+                  user="root", client_keys=None, master=None, client=None , pub_id=None,
                   **kwargs):
         """Create Mininet object.
            topo: Topo (topology) object or None
@@ -215,17 +217,24 @@ class Distrinet( Mininet ):
         self.thread.start()
 
 
-        self.jump = jump
+        # self.jump = jump
         self.user = user
         self.pub_id = pub_id
 
         self.client_keys = client_keys
         self.masterhost = master
         _info ("Connecting to master node\n")
-        self.masterSsh = ASsh(loop=self.loop, host=self.masterhost, username=self.user, bastion=self.jump, client_keys=self.client_keys)
+        self.masterSsh = ASsh(loop=self.loop, host=self.masterhost, username=self.user, client_keys=self.client_keys)
         self.masterSsh.connect()
         self.masterSsh.waitConnected()
         _info ("connected to master node\n")
+        
+        self.clienthost = client
+        _info ("Connecting to client node\n")
+        self.clientSsh = ASsh(loop=self.loop, host=self.clienthost, username=self.user, client_keys=self.client_keys)
+        self.clientSsh.connect()
+        self.clientSsh.waitConnected()
+        _info ("connected to client node\n")
 
 
         self.connectedToAdminNetwork=set()
@@ -322,7 +331,7 @@ class Distrinet( Mininet ):
                     loop=self.loop,
                     master=self.masterSsh,
                     username=self.user,
-                    bastion=self.jump,
+                    # bastion=self.jump,
                     client_keys=self.client_keys,
                 **params)
         self.controllers.append(controller_new)
@@ -442,6 +451,43 @@ class Distrinet( Mininet ):
             # This may not be the right place to do this, but
             # it needs to be done somewhere.
         info( '\n' )
+        
+    def _findNameIP(self, name):
+        """
+        Resolves name to IP as seen by the eyeball
+        """
+        _ipMatchRegex = re.compile( r'\d+\.\d+\.\d+\.\d+' )
+
+        # First, check for an IP address
+        ipmatch = _ipMatchRegex.findall( name )
+        if ipmatch:
+            return ipmatch[ 0 ]
+        # Otherwise, look up remote server
+        output = self.masternode.cmd('getent ahostsv4 {}'.format(name))
+
+        ips = _ipMatchRegex.findall( output )
+
+        ip = ips[ 0 ] if ips else None
+        return ip
+    
+    def clientConnectToMaster(self, vxlan_id, brname="admin-br", vxlan_dst_port=4789, **params):
+        client_ip = self._findNameIP(self.clienthost)
+        master_ip = self._findNameIP(self.masterhost)
+        vxlan_name = "vxlan{}".format(vxlan_id)
+        cmds = []
+        cmds.append("ip link add {} type vxlan id {} remote {} local {} dstport {}".format(vxlan_name, vxlan_id, master_ip, client_ip, vxlan_dst_port))
+        cmds.append("ip link set up {}".format(vxlan_name))
+        cmds.append('brctl addif {} {}'.format(brname, vxlan_name))
+        cmds.append('ip link set up {}'.format(brname))
+        cmd = ';'.join(cmds)
+        self.clientSsh.cmd(cmd)
+        cmds.append("ip link add {} type vxlan id {} remote {} local {} dstport {}".format(vxlan_name, vxlan_id, client_ip, master_ip, vxlan_dst_port))
+        cmds.append("ip link set up {}".format(vxlan_name))
+        cmds.append('brctl addif {} {}'.format(brname, vxlan_name))
+        cmds.append('ip link set up {}'.format(brname))
+        cmd = ';'.join(cmds)
+        self.masterSsh.cmd(cmd)
+        
 
     # DSA - OK
     def buildFromTopo( self, topo=None ):
@@ -456,13 +502,18 @@ class Distrinet( Mininet ):
 
         info( '*** Creating network\n' )
 
-        bastion = self.jump
+        # bastion = self.jump
         waitStart = False
         _ip = "{}/{}".format(ipAdd(self.adminNextIP, ipBaseNum=self.adminIpBaseNum, prefixLen=self.adminPrefixLen), self.adminPrefixLen)
         self.adminNextIP += 1
         self.host.createMasterAdminNetwork(self.masterSsh, brname="admin-br", ip=_ip)
         _info (" admin network created on {}\n".format(self.masterhost))
-
+        
+        _ip = "{}/{}".format(ipAdd(self.adminNextIP, ipBaseNum=self.adminIpBaseNum, prefixLen=self.adminPrefixLen), self.adminPrefixLen)
+        self.adminNextIP += 1
+        self.host.createClientAdminNetwork(self.clientSsh, brname="admin-br", ip=_ip)
+        self.clientConnectToMaster(self.masterSsh, brname="admin-br", ip=_ip)
+        _info (" client network created on {} and conneted to master\n".format(self.clienthost))
 
         assert (isinstance(self.controllers, list))
 
@@ -493,7 +544,7 @@ class Distrinet( Mininet ):
                     loop=self.loop,
                     master=self.masterSsh,
                     username=self.user,
-                    bastion=bastion,
+                    # bastion=bastion,
                     client_keys=self.client_keys,
                     waitStart=waitStart,
                     **topo.nodeInfo( hostName ))
@@ -507,7 +558,7 @@ class Distrinet( Mininet ):
                     loop=self.loop,
                     master=self.masterSsh,
                     username=self.user,
-                    bastion=bastion,
+                    # bastion=bastion,
                     client_keys=self.client_keys,
                     waitStart=waitStart,
                     **topo.nodeInfo( switchName ))
