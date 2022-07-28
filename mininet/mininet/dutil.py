@@ -2,7 +2,7 @@ from mininet.provision.provision import Provision
 from mininet.log import info, error, debug, output, warn
 
 def _info(*args, **kwargs):
-    pass
+    info(*args, **kwargs)
 
 def default_images(*args, **kwargs):
     conf = Provision.get_configurations()

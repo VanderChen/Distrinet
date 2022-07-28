@@ -473,7 +473,7 @@ class Distrinet( Mininet ):
     def clientConnectToMaster(self, vxlan_id, brname="admin-br", vxlan_dst_port=4789, **params):
         client_ip = self._findNameIP(self.clienthost)
         master_ip = self._findNameIP(self.masterhost)
-        vxlan_name = "vxlan{}".format(vxlan_id)
+        vxlan_name = "vx_{}".format(vxlan_id)
         cmds = []
         cmds.append("ip link add {} type vxlan id {} remote {} local {} dstport {}".format(vxlan_name, vxlan_id, master_ip, client_ip, vxlan_dst_port))
         cmds.append("ip link set up {}".format(vxlan_name))
@@ -481,6 +481,7 @@ class Distrinet( Mininet ):
         cmds.append('ip link set up {}'.format(brname))
         cmd = ';'.join(cmds)
         self.clientSsh.cmd(cmd)
+        cmds = []
         cmds.append("ip link add {} type vxlan id {} remote {} local {} dstport {}".format(vxlan_name, vxlan_id, client_ip, master_ip, vxlan_dst_port))
         cmds.append("ip link set up {}".format(vxlan_name))
         cmds.append('brctl addif {} {}'.format(brname, vxlan_name))
@@ -511,8 +512,8 @@ class Distrinet( Mininet ):
         
         _ip = "{}/{}".format(ipAdd(self.adminNextIP, ipBaseNum=self.adminIpBaseNum, prefixLen=self.adminPrefixLen), self.adminPrefixLen)
         self.adminNextIP += 1
-        self.host.createClientAdminNetwork(self.clientSsh, brname="admin-br", ip=_ip)
-        self.clientConnectToMaster(self.masterSsh, brname="admin-br", ip=_ip)
+        self.host.createMasterAdminNetwork(self.clientSsh, brname="admin-br", ip=_ip)
+        self.clientConnectToMaster(vxlan_id=CloudLink.newLinkId(), brname="admin-br", vxlan_dst_port=4789)
         _info (" client network created on {} and conneted to master\n".format(self.clienthost))
 
         assert (isinstance(self.controllers, list))

@@ -471,18 +471,13 @@ class DistrinetRunner( object ):
         #                    placement=PLACEMENT[ opts.placement ] )
         #     mininet.cli.CLI = ClusterCLI
 
-
-        if opts.provision and opts.workers :
-            error ( "Please specify --provision OR --workers\n" )
-            exit()
-
-        if (opts.provision or opts.workers or opts.bastion) and opts.placement_file_path:
+        if (opts.workers or opts.bastion) and opts.placement_file_path:
             # raise an error, the deployment file contains all the infos
             error("if you specify the placement file, there is no need to provide provision, the bastion or the workers\n")
             exit()
 
         # load default configuration
-        if opts.provision or opts.workers or opts.placement_file_path:
+        if opts.workers or opts.placement_file_path:
             conf = Provision.get_configurations()
             ssh_conf = conf["ssh"]
             pub_id = ssh_conf["pub_id"]
@@ -553,7 +548,7 @@ class DistrinetRunner( object ):
             master = workers[1]
             workers=workers[2:]
 
-        if opts.workers or opts.provision or opts.placement_file_path:
+        if opts.workers or opts.placement_file_path:
             warn( '*** WARNING: Experimental cloud mode!\n'
                   '*** Using LxcNode, LxcOVSSwitch, CloudLink\n' )
             host, switch, link = LxcNode, LxcOVSSwitch, CloudLink
@@ -633,7 +628,7 @@ class DistrinetRunner( object ):
                           'may break host DNS over NAT\n')
             mn.addNAT( *opts.nat_args, **opts.nat_kwargs ).configDefault()
 
-        if opts.provision or opts.workers:
+        if opts.workers:
             # port forwarding
             if 'port_forwarding' in locals():
                 cmds = []
@@ -653,7 +648,7 @@ class DistrinetRunner( object ):
 
         mn.start()
 
-        if opts.provision or opts.workers:
+        if opts.workers:
             # port forwarding
 
             if 'port_forwarding' in locals():
@@ -675,7 +670,7 @@ class DistrinetRunner( object ):
         if opts.post:
             CLI( mn, script=opts.post )
 
-        if opts.provision or opts.workers:
+        if opts.workers:
             # port forwarding
             if 'port_forwarding' in locals():
                 cmds = []
